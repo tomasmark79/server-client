@@ -347,12 +347,5 @@ public:
     {
         return this->totalConnectedClients;
     }
-    void setTotalConnectedClients(int totalConnectedClients)
-    {
-        this->totalConnectedClients = totalConnectedClients;
-    }
     // ---------------------------------------------------
-
-
-
 };
