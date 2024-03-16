@@ -20,6 +20,7 @@ int main(int argc, char *argv[], char* env[])
 
     // // // // // // // // // // // // // // // // // // // // //
     Network net;
+    vector<int> eraryVector;
 
     // server
     net.setBindHostName("192.168.79.101");
@@ -49,7 +50,7 @@ int main(int argc, char *argv[], char* env[])
             if (net.serverIsRegisteringClient() == 0)
             {
                 Beep(1500,20); // connected
-                if (net.getTotalConnectedClients() == 4)
+                if (net.getTotalConnectedClients() == 1)
                     break;
             }
         }
@@ -62,26 +63,46 @@ int main(int argc, char *argv[], char* env[])
         if (net.connectionToTheServer() == 0)
         {
             // neccessary = important - is managing bidirectional transfer
-            net.clientHostService();
+            net.clientHostService(eraryVector);
             // Here we can handle more client transfers
             // Better will be in different condition below
         }
     }
 
-    // Transfer int value there and back
-    if (isServer)
-    {
-        for (int i = 0; i < 256; i++)
-        {
+    // transfer data there and back in vector<int> type
+    vector<int> bufToSendtoServer = {1,2};
+    vector<int> bufToSendtoClient = {3,4};
 
+    time_t startTime = time(nullptr);
+    while ( (time(nullptr) - startTime < 10) )
+    {
+        if (isServer)
+        {
+            int res = net.serverHostService(eraryVector);
+            if (eraryVector.size() > 0)
+            {
+                for (int i = 0; i < eraryVector.size(); i++)
+                    cout << eraryVector[i] << " ";
+                cout << endl;
+            }
+
+            net.sendVectorToClient(bufToSendtoClient, bufToSendtoClient.size());
+        }
+        else
+        {
+            int res = net.clientHostService(eraryVector);
+            if (eraryVector.size() > 0)
+            {
+                for (int i = 0; i < eraryVector.size(); i++)
+                    cout << eraryVector[i] << " ";
+                cout << endl;
+            }
+
+            net.sendVectorToServer(bufToSendtoServer, bufToSendtoServer.size());
         }
     }
-    else
-    {
-        for (int i = 0; i < 256; i++)
-        {
 
-        }
-    }
+
+
     return 0;
 }

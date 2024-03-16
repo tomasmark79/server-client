@@ -163,92 +163,102 @@ public:
         return FAILURE;
     }
 
-    int serverHostService()
+    // call
+    // vector<int> bufToSend = {1,2,3,4,5,6,7,8,9,10};
+    // net.sendVectorToServer(bufToSend, bufToSend.size());
+    int sendVectorToServer(vector<int>& vec, size_t size)
     {
-        /* Wait up to 10000 milliseconds for an event. */
+        ENetPacket * packet = enet_packet_create (vec.data(),
+                              vec.size() * sizeof(int),
+                              ENET_PACKET_FLAG_RELIABLE);
+        enet_peer_send (peerServer, 0, packet);
+        return 0;
+    }
+
+    // call
+    // vector<int> bufToReceive = {};
+    // int res = net.serverHostService(bufToReceive);
+    int serverHostService(vector<int>& data)
+    {
+        data.clear();
         while (enet_host_service (server, &event, 50) > 0)
         {
             switch (event.type)
             {
             case ENET_EVENT_TYPE_NONE:
-                break;
+                return 0;
 
             case ENET_EVENT_TYPE_CONNECT:
-                break;
+                return 1;
 
             case ENET_EVENT_TYPE_DISCONNECT:
                 sprintf ((char*)stream, "%s disconnected.\n", (void*)event.peer -> data);
                 cout << stream << endl;
                 /* Reset the peer's client information. */
                 event.peer -> data = NULL;
-                return FAILURE;
+                return 2;
 
             case ENET_EVENT_TYPE_RECEIVE:
-                sprintf ((char*)stream, "len %u s %s from %s ch. %u.\n",
-                         event.packet -> dataLength,
-                         event.packet -> data,
-                         event.peer -> data,
-                         event.channelID);
-                cout << stream << endl;
+                cout << "size: " << event.packet->dataLength << endl;
+                data.insert(data.end(),
+                                    reinterpret_cast<int*>(event.packet->data),
+                                    reinterpret_cast<int*>(event.packet->data) + event.packet->dataLength / sizeof(int));
+
                 /* Clean up the packet now that we're done using it. */
                 enet_packet_destroy (event.packet);
-                return SUCCESS;
+                return 3;
             }
         }
-        return FAILURE;
+        return 4; // no event
     }
 
-    int clientHostService()
+    // call
+    // vector<int> bufToSend = {1,2,3,4,5,6,7,8,9,10};
+    // net.sendVectorToServer(bufToSend, bufToSend.size());
+    int sendVectorToClient(vector<int>& vec, size_t size)
     {
-        /* Wait up to 1000 milliseconds for an event. */
-        while (enet_host_service (client, &event, 50) > 0)
-        {
-            switch (event.type)
-            {
-            case ENET_EVENT_TYPE_NONE:
-                break;
-
-            case ENET_EVENT_TYPE_CONNECT:
-                break;
-
-            case ENET_EVENT_TYPE_DISCONNECT:
-                sprintf ((char*)stream, "%s disconnected.\n", (void*)event.peer -> data);
-                cout << stream << endl;
-                /* Reset the peer's client information. */
-                event.peer -> data = NULL;
-                return FAILURE;
-
-            case ENET_EVENT_TYPE_RECEIVE:
-                sprintf ((char*)stream, "len %u s %s from %s ch. %u.\n",
-                         event.packet -> dataLength,
-                         event.packet -> data,
-                         event.peer -> data,
-                         event.channelID);
-                cout << stream << endl;
-                /* Clean up the packet now that we're done using it. */
-                enet_packet_destroy (event.packet);
-                return SUCCESS;
-            }
-        }
-        return FAILURE;
-    }
-
-    int sendIntValueToClient(int value)
-    {
-        ENetPacket * packet = enet_packet_create (&value,
-                              sizeof(int) + 1,
+        ENetPacket * packet = enet_packet_create (vec.data(),
+                              vec.size() * sizeof(int),
                               ENET_PACKET_FLAG_RELIABLE);
         enet_peer_send (peerClient, 0, packet);
         return 0;
     }
 
-    int sendIntValueToServer(int value)
+    // call
+    // vector<int> bufToReceive = {};
+    // int res = net.clientHostService(bufToReceive);
+    int clientHostService(vector<int>& data)
     {
-        ENetPacket * packet = enet_packet_create (&value,
-                              sizeof(int) + 1,
-                              ENET_PACKET_FLAG_RELIABLE);
-        enet_peer_send (peerServer, 0, packet);
-        return 0;
+        data.clear();
+        while (enet_host_service (client, &event, 50) > 0)
+        {
+            switch (event.type)
+            {
+            case ENET_EVENT_TYPE_NONE:
+                return 0;
+
+            case ENET_EVENT_TYPE_CONNECT:
+                return 1;
+
+            case ENET_EVENT_TYPE_DISCONNECT:
+                sprintf ((char*)stream, "%s disconnected.\n", (void*)event.peer -> data);
+                cout << stream << endl;
+                /* Reset the peer's client information. */
+                event.peer -> data = NULL;
+                return 2;
+
+            case ENET_EVENT_TYPE_RECEIVE:
+                cout << "size: " << event.packet->dataLength << endl;
+                data.insert(data.end(),
+                                    reinterpret_cast<int*>(event.packet->data),
+                                    reinterpret_cast<int*>(event.packet->data) + event.packet->dataLength / sizeof(int));
+
+                /* Clean up the packet now that we're done using it. */
+                enet_packet_destroy (event.packet);
+                return 3;
+            }
+        }
+        return 4; // no event
     }
 
     // ---------------------------------------------------
