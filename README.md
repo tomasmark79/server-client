@@ -1,11 +1,13 @@
 # server-client
 
-My simple C++ eNet implementation for my own projects. eNet is useful Server/Client UDP transport interface.
+is simple C++ eNet implementation. eNet is Server/Client UDP low latency network library.
 
-My implementation is useful Server/Client header file, which is helpful to transfer some types across network environment. For you fast start you can use an examples from main.cpp.
+All the magic is in one header file named network.h.
+Some example calls which can be helpful for your fast start are in main.cpp.
 
-Header Network.h shall be updated as neccessary.
-
+From the reason this solution is very useful it will probably updated continuously. 
 Enjoy.
+
+
 
 
