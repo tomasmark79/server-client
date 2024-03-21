@@ -1,8 +1,11 @@
 #include <iostream>
+#include <winsock2.h>
 #include "Network.h"
 #include <stdexcept>
 #include <ctime>
 #include <windows.h>
+
+
 using namespace std;
 
 int main(int argc, char *argv[], char* env[])
@@ -23,65 +26,43 @@ int main(int argc, char *argv[], char* env[])
     vector<int> eraryVector;
 
     // server
-    net.setBindHostName("192.168.79.101");
-    net.setBindPort(7995);
-    net.setMaxClients(4);
-    net.setChannels(2);
-    net.setAmountIn(0);
-    net.setAmountOut(0);
+    net
+    .setBindHostName("192.168.79.101")
+    .setBindPort(7995)
+    .setMaxClients(4)
+    .setChannels(2)
+    .setAmountIn(0)
+    .setAmountOut(0);
 
     // client
-    net.setRemoteHostName("192.168.79.101");
-    net.setRemotePort(7995);
-    net.setOutConnections(1);
-    net.initENet();
+    net
+    .setRemoteHostName("192.168.79.101")
+    .setRemotePort(7995)
+    .setOutConnections(1)
+    .initENet();
 
     // Connection each other
     if (isServer)
     {
-        cout << "Server" << endl;
-        net.initServer();
-        cout << endl << "Waiting for a clients ..." << endl;
-
-        // wait for continue if maxClients or timeout occured
-        const time_t startTime = time(nullptr);
-        while ( (time(nullptr) - startTime < 10) )
-        {
-            if (net.serverIsRegisteringClient() == 0)
-            {
-                Beep(1500,20); // connected
-                if (net.getTotalConnectedClients() == 1)
-                    break;
-            }
-        }
+        net.registerClients(1000, 10);
     }
     else
     {
-        cout << "Client" << endl;
-        net.initClient();
-        cout << endl << "Connecting to the server ..." << endl;
-        if (net.connectionToTheServer() == 0)
-        {
-            // neccessary = important - is managing bidirectional transfer
-            net.clientHostService(eraryVector);
-            // Here we can handle more client transfers
-            // Better will be in different condition below
-        }
+        net.registerServer(1000, 10);
     }
 
-    // transfer data there and back in vector<int> type
-    vector<int> bufToSendtoServer = {1,2};
-    vector<int> bufToSendtoClient = {3,4};
-
+    // bidirectional communication transfer data there and back in vector<int> type
+    vector<int> bufToSendtoServer = {1,2,3,4,5,6,7,8,9,10,11,12,13,14};
+    vector<int> bufToSendtoClient = {15,16,17,18,999,65535};
     time_t startTime = time(nullptr);
-    while ( (time(nullptr) - startTime < 10) )
+    while ( (time(nullptr) - startTime < 20) )
     {
         if (isServer)
         {
-            int res = net.serverHostService(eraryVector);
-            if (eraryVector.size() > 0)
+            int status = net.serverHostService(eraryVector, 50);
+            if (eraryVector.size() > 0 && status == 3)
             {
-                for (int i = 0; i < eraryVector.size(); i++)
+                for (size_t i = 0; i < eraryVector.size(); i++)
                     cout << eraryVector[i] << " ";
                 cout << endl;
             }
@@ -90,10 +71,10 @@ int main(int argc, char *argv[], char* env[])
         }
         else
         {
-            int res = net.clientHostService(eraryVector);
-            if (eraryVector.size() > 0)
+            int status = net.clientHostService(eraryVector, 50);
+            if (eraryVector.size() > 0 && status == 3)
             {
-                for (int i = 0; i < eraryVector.size(); i++)
+                for (size_t i = 0; i < eraryVector.size(); i++)
                     cout << eraryVector[i] << " ";
                 cout << endl;
             }
@@ -101,6 +82,10 @@ int main(int argc, char *argv[], char* env[])
             net.sendVectorToServer(bufToSendtoServer, bufToSendtoServer.size());
         }
     }
+
+
+
+
 
 
 

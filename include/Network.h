@@ -8,14 +8,55 @@
 static const int SUCCESS = 0;
 static const int FAILURE = 1;
 
-using std::cout;
-using std::cerr;
-using std::endl;
 using std::string;
 using std::vector;
 
+namespace ui
+{
+
+class LogUserInterface
+{
+public:
+    template<typename T>
+    LogUserInterface& operator<<(const T& value)
+    {
+        std::cout << value;
+        return *this;
+    };
+    // Specialized method for manipulators of stream (ex. std::endl)
+    typedef std::ostream& (*Manipulator)(std::ostream&);
+    LogUserInterface& operator<<(Manipulator manip)
+    {
+        std::cout << manip; // manipulator application to standard output
+        return *this;
+    }
+};
+
+class LogDebugInterface
+{
+public:
+    template<typename T>
+    LogDebugInterface& operator<<(const T& value)
+    {
+        std::cout << value;
+        return *this;
+    };
+
+    // Specialized method for manipulators of stream (ex. std::endl)
+    typedef std::ostream& (*Manipulator)(std::ostream&);
+    LogDebugInterface& operator<<(Manipulator manip)
+    {
+        std::cout << manip; // manipulator application to standard output
+        return *this;
+    }
+};
+}
+
 class Network
 {
+    ui::LogUserInterface logUser;
+    ui::LogDebugInterface logDebug;
+
     ENetHost*   server;
     ENetPeer*   peerServer;
 
@@ -77,12 +118,12 @@ public:
                                    amountOut /* assume any amount of outgoing bandwidth */);
         if (server == nullptr)
         {
-            cerr << "An error occurred while trying to create an ENet server host." << endl;
+            logUser << "An error occurred while trying to create an ENet server host." << std::endl;
             return FAILURE;
         }
         else
         {
-            cout << "ENet server started sucessfuly." << endl;
+            logUser << "ENet server started sucessfuly." << std::endl;
         }
         return SUCCESS;
     }
@@ -98,31 +139,31 @@ public:
                                    amountOut /* assume any amount of outgoing bandwidth */);
         if (client == nullptr)
         {
-            cerr << "An error occurred while trying to create an ENet client host." << endl;
+            logUser << "An error occurred while trying to create an ENet client host." << std::endl;
             return FAILURE;
         }
         else
         {
-            cout << "ENet client started sucessfuly." << endl;
+            logUser << "ENet client started sucessfuly." << std::endl;
         }
         return SUCCESS;
     }
 
-    int connectionToTheServer()
+    int connectionToTheServer(int timeouMilis)
     {
         peerServer = enet_host_connect (client, &remoteAddress, 2, 0);
         if (peerServer == nullptr)
         {
-            cerr << "No available peers for initiating an ENet connection." << endl;
+            logUser << "No available peers for initiating an ENet connection." << std::endl;
             return FAILURE;
         }
 
-        if (enet_host_service (client, &event, 10000) > 0 &&
+        if (enet_host_service (client, &event, timeouMilis) > 0 &&
                 event.type == ENET_EVENT_TYPE_CONNECT)
         {
             peerServer = event.peer;
             event.peer -> data = (void*)"Server";
-            cout << "Connection to " << this->remoteHostName << ":" << this->remotePort << " succeeded." << endl;
+            logUser << "Connection to " << this->remoteHostName << ":" << this->remotePort << " succeeded." << std::endl;
         }
         else
         {
@@ -130,16 +171,16 @@ public:
             /* received. Reset the peer in the event the 5 seconds   */
             /* had run out without any significant event.            */
             enet_peer_reset (peerServer);
-            cerr << "Connection to " << this->remoteHostName << ":" << this->remotePort << " failed." << endl;
+            logUser << "Connection to " << this->remoteHostName << ":" << this->remotePort << " failed." << std::endl;
             return FAILURE;
         }
         return SUCCESS;
     }
 
-    int serverIsRegisteringClient()
+    int serverIsRegisteringClient(int timeoutMilis)
     {
         /* Wait up to 10000 milliseconds for an event. */
-        while (enet_host_service (server, &event, 10000) > 0)
+        while (enet_host_service (server, &event, timeoutMilis) > 0)
         {
             switch (event.type)
             {
@@ -151,7 +192,7 @@ public:
                 sprintf ((char*)stream, "A new client from %x:%u registered.",
                          event.peer -> address.host,
                          event.peer -> address.port);
-                cout << stream << endl;
+                logUser << stream << std::endl;
                 totalConnectedClients++;
                 return SUCCESS;
             case ENET_EVENT_TYPE_DISCONNECT:
@@ -178,10 +219,10 @@ public:
     // call
     // vector<int> bufToReceive = {};
     // int res = net.serverHostService(bufToReceive);
-    int serverHostService(vector<int>& data)
+    int serverHostService(vector<int>& data, int timeoutMilis)
     {
         data.clear();
-        while (enet_host_service (server, &event, 50) > 0)
+        while (enet_host_service (server, &event, timeoutMilis) > 0)
         {
             switch (event.type)
             {
@@ -192,17 +233,18 @@ public:
                 return 1;
 
             case ENET_EVENT_TYPE_DISCONNECT:
-                sprintf ((char*)stream, "%s disconnected.\n", (void*)event.peer -> data);
-                cout << stream << endl;
+                sprintf (static_cast<char*>(stream), "%s disconnected.\n", static_cast<char*>(event.peer -> data));
+                // sprintf ((char*)stream, "%s disconnected.\n", (void*)event.peer -> data);
+                logUser << stream << std::endl;
                 /* Reset the peer's client information. */
                 event.peer -> data = NULL;
                 return 2;
 
             case ENET_EVENT_TYPE_RECEIVE:
-                cout << "size: " << event.packet->dataLength << endl;
+                logUser << "size: " << event.packet->dataLength << std::endl;
                 data.insert(data.end(),
-                                    reinterpret_cast<int*>(event.packet->data),
-                                    reinterpret_cast<int*>(event.packet->data) + event.packet->dataLength / sizeof(int));
+                            reinterpret_cast<int*>(event.packet->data),
+                            reinterpret_cast<int*>(event.packet->data) + event.packet->dataLength / sizeof(int));
 
                 /* Clean up the packet now that we're done using it. */
                 enet_packet_destroy (event.packet);
@@ -227,10 +269,10 @@ public:
     // call
     // vector<int> bufToReceive = {};
     // int res = net.clientHostService(bufToReceive);
-    int clientHostService(vector<int>& data)
+    int clientHostService(vector<int>& data, int timeoutMilis)
     {
         data.clear();
-        while (enet_host_service (client, &event, 50) > 0)
+        while (enet_host_service (client, &event, timeoutMilis) > 0)
         {
             switch (event.type)
             {
@@ -241,17 +283,17 @@ public:
                 return 1;
 
             case ENET_EVENT_TYPE_DISCONNECT:
-                sprintf ((char*)stream, "%s disconnected.\n", (void*)event.peer -> data);
-                cout << stream << endl;
+                sprintf (static_cast<char*>(stream), "%s disconnected.\n", static_cast<char*>(event.peer -> data));
+                logUser << stream << std::endl;
                 /* Reset the peer's client information. */
                 event.peer -> data = NULL;
                 return 2;
 
             case ENET_EVENT_TYPE_RECEIVE:
-                cout << "size: " << event.packet->dataLength << endl;
+                logUser << "size: " << event.packet->dataLength << std::endl;
                 data.insert(data.end(),
-                                    reinterpret_cast<int*>(event.packet->data),
-                                    reinterpret_cast<int*>(event.packet->data) + event.packet->dataLength / sizeof(int));
+                            reinterpret_cast<int*>(event.packet->data),
+                            reinterpret_cast<int*>(event.packet->data) + event.packet->dataLength / sizeof(int));
 
                 /* Clean up the packet now that we're done using it. */
                 enet_packet_destroy (event.packet);
@@ -261,86 +303,142 @@ public:
         return 4; // no event
     }
 
+    int registerClients(int networkTimeoutMilis, int timeoutTotalSeconds)
+    {
+        logUser << "Server" << std::endl;
+
+        this->initServer();
+        logUser << std::endl << "Waiting for a clients ..." << std::endl;
+
+        // wait for continue if maxClients or timeout occured
+        const time_t startTime = time(nullptr);
+        while ( (time(nullptr) - startTime < timeoutTotalSeconds) ) // total timeout
+        {
+            if (this->serverIsRegisteringClient(networkTimeoutMilis) == 0)
+            {
+                Beep(1500,20); // connected
+                if (this->getTotalConnectedClients() == 1)
+                    return 0;
+            }
+        }
+        return 1;
+    }
+
+    int registerServer(int networkTimeoutMilis, int timeoutTotalSeconds)
+    {
+        vector<int> eraryVector;
+        logUser << "Client" << std::endl;
+        this->initClient();
+        logUser << std::endl << "Connecting to the server ..." << std::endl;
+
+        // Client must trying connect despite server is running later that client
+        // Therefore more attempts to connect every second
+        const time_t startTime = time(nullptr);
+        while ( (time(nullptr) - startTime < timeoutTotalSeconds) ) // total timeout
+        {
+            if (this->connectionToTheServer(networkTimeoutMilis) == 0)
+            {
+                // neccessary - will accept connection request
+                this->clientHostService(eraryVector, 50);
+                Beep(1100,20); // connected
+                return 0;
+            }
+        }
+        return 1;
+    }
+
+
+
+
     // ---------------------------------------------------
     string getBindHostName() const
     {
         return this->bindHostName;
     }
-    void setBindHostName(string bindHostName)
+    Network& setBindHostName(string bindHostName)
     {
         this->bindHostName = bindHostName;
+        return *this;
     }
     // ---------------------------------------------------
     string getRemoteHostName() const
     {
         return this->remoteHostName;
     }
-    void setRemoteHostName(string remoteHostName)
+    Network& setRemoteHostName(string remoteHostName)
     {
         this->remoteHostName = remoteHostName;
+        return *this;
     }
     // ---------------------------------------------------
     int getRemotePort() const
     {
         return this->remotePort;
     }
-    void setRemotePort(int port)
+    Network& setRemotePort(int port)
     {
         this->remotePort = port;
+        return *this;
     }
     // ---------------------------------------------------
     int getBindPort() const
     {
         return this->bindPort;
     }
-    void setBindPort(int port)
+    Network& setBindPort(int port)
     {
         this->bindPort = port;
+        return *this;
     }
     // ---------------------------------------------------
     int getMaxClients() const
     {
         return this->maxClients;
     }
-    void setMaxClients(int maxClients)
+    Network& setMaxClients(int maxClients)
     {
         this->maxClients = maxClients;
+        return *this;
     }
     // ---------------------------------------------------
     int getChannels() const
     {
         return this->channels;
     }
-    void setChannels(int channels)
+    Network& setChannels(int channels)
     {
         this->channels = channels;
+        return *this;
     }
     // ---------------------------------------------------
     int getAmountIn() const
     {
         return this->amountIn;
     }
-    void setAmountIn(int amountIn)
+    Network& setAmountIn(int amountIn)
     {
         this->amountIn = amountIn;
+        return *this;
     }
     // ---------------------------------------------------
     int getAmountOut() const
     {
         return this->amountOut;
     }
-    void setAmountOut(int amountOut)
+    Network& setAmountOut(int amountOut)
     {
         this->amountOut = amountOut;
+        return *this;
     }
     // ---------------------------------------------------
     int getOutConnections() const
     {
         return this->outConnections;
     }
-    void setOutConnections(int outConnections)
+    Network& setOutConnections(int outConnections)
     {
         this->outConnections = outConnections;
+        return *this;
     }
     // ---------------------------------------------------
     int getTotalConnectedClients() const
