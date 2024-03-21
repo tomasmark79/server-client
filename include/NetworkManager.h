@@ -1,9 +1,31 @@
+//MIT License
+//
+//Copyright (c) 2024 Tomas Mark
+//
+//Permission is hereby granted, free of charge, to any person obtaining a copy
+//of this software and associated documentation files (the "Software"), to deal
+//in the Software without restriction, including without limitation the rights
+//to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+//copies of the Software, and to permit persons to whom the Software is
+//furnished to do so, subject to the following conditions:
+//
+//The above copyright notice and this permission notice shall be included in all
+//copies or substantial portions of the Software.
+//
+//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+//AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+//OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+//SOFTWARE.
+
 #pragma once
 #include <iostream>
 #include <string>
 #include <cstdint>
 #include <vector>
-#include "enet\enet.h"
+#include "enet\enet.h" // required enet library from: http://enet.bespin.org/ - MIT License
 
 static const int SUCCESS = 0;
 static const int FAILURE = 1;
@@ -50,9 +72,10 @@ public:
         return *this;
     }
 };
+
 }
 
-class Network
+class NetworkManager
 {
     ui::LogUserInterface logUser;
     ui::LogDebugInterface logDebug;
@@ -85,10 +108,10 @@ class Network
     char stream[256];
 
 public:
-    Network() :
+    NetworkManager() :
         server(nullptr), client(nullptr), totalConnectedClients(0)
     {};
-    ~Network()
+    ~NetworkManager()
     {
         if (server != nullptr)
             enet_host_destroy(server);
@@ -96,8 +119,8 @@ public:
             enet_host_destroy(client);
     };
 
-    Network (Network& network);
-    Network operator= (Network& network);
+    NetworkManager (NetworkManager& NetworkManager);
+    NetworkManager operator= (NetworkManager& NetworkManager);
 
     int initENet()
     {
@@ -303,7 +326,7 @@ public:
         return 4; // no event
     }
 
-    int registerClients(int networkTimeoutMilis, int timeoutTotalSeconds)
+    int registerClients(int NetworkManagerTimeoutMilis, int timeoutTotalSeconds)
     {
         logUser << "Server" << std::endl;
 
@@ -314,7 +337,7 @@ public:
         const time_t startTime = time(nullptr);
         while ( (time(nullptr) - startTime < timeoutTotalSeconds) ) // total timeout
         {
-            if (this->serverIsRegisteringClient(networkTimeoutMilis) == 0)
+            if (this->serverIsRegisteringClient(NetworkManagerTimeoutMilis) == 0)
             {
                 Beep(1500,20); // connected
                 if (this->getTotalConnectedClients() == 1)
@@ -324,7 +347,7 @@ public:
         return 1;
     }
 
-    int registerServer(int networkTimeoutMilis, int timeoutTotalSeconds)
+    int registerServer(int NetworkManagerTimeoutMilis, int timeoutTotalSeconds)
     {
         vector<int> eraryVector;
         logUser << "Client" << std::endl;
@@ -336,7 +359,7 @@ public:
         const time_t startTime = time(nullptr);
         while ( (time(nullptr) - startTime < timeoutTotalSeconds) ) // total timeout
         {
-            if (this->connectionToTheServer(networkTimeoutMilis) == 0)
+            if (this->connectionToTheServer(NetworkManagerTimeoutMilis) == 0)
             {
                 // neccessary - will accept connection request
                 this->clientHostService(eraryVector, 50);
@@ -347,15 +370,12 @@ public:
         return 1;
     }
 
-
-
-
     // ---------------------------------------------------
     string getBindHostName() const
     {
         return this->bindHostName;
     }
-    Network& setBindHostName(string bindHostName)
+    NetworkManager& setBindHostName(string bindHostName)
     {
         this->bindHostName = bindHostName;
         return *this;
@@ -365,7 +385,7 @@ public:
     {
         return this->remoteHostName;
     }
-    Network& setRemoteHostName(string remoteHostName)
+    NetworkManager& setRemoteHostName(string remoteHostName)
     {
         this->remoteHostName = remoteHostName;
         return *this;
@@ -375,7 +395,7 @@ public:
     {
         return this->remotePort;
     }
-    Network& setRemotePort(int port)
+    NetworkManager& setRemotePort(int port)
     {
         this->remotePort = port;
         return *this;
@@ -385,7 +405,7 @@ public:
     {
         return this->bindPort;
     }
-    Network& setBindPort(int port)
+    NetworkManager& setBindPort(int port)
     {
         this->bindPort = port;
         return *this;
@@ -395,7 +415,7 @@ public:
     {
         return this->maxClients;
     }
-    Network& setMaxClients(int maxClients)
+    NetworkManager& setMaxClients(int maxClients)
     {
         this->maxClients = maxClients;
         return *this;
@@ -405,7 +425,7 @@ public:
     {
         return this->channels;
     }
-    Network& setChannels(int channels)
+    NetworkManager& setChannels(int channels)
     {
         this->channels = channels;
         return *this;
@@ -415,7 +435,7 @@ public:
     {
         return this->amountIn;
     }
-    Network& setAmountIn(int amountIn)
+    NetworkManager& setAmountIn(int amountIn)
     {
         this->amountIn = amountIn;
         return *this;
@@ -425,7 +445,7 @@ public:
     {
         return this->amountOut;
     }
-    Network& setAmountOut(int amountOut)
+    NetworkManager& setAmountOut(int amountOut)
     {
         this->amountOut = amountOut;
         return *this;
@@ -435,7 +455,7 @@ public:
     {
         return this->outConnections;
     }
-    Network& setOutConnections(int outConnections)
+    NetworkManager& setOutConnections(int outConnections)
     {
         this->outConnections = outConnections;
         return *this;
