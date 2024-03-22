@@ -45,30 +45,34 @@ int main(int argc, char *argv[], char* env[])
     // // // // // // // // // // // // // // // // // // // // //
     NetworkManager net;
     vector<int> eraryVector;
-
-    // server
-    net
-    .setBindHostName("192.168.79.101")
-    .setBindPort(7995)
-    .setMaxClients(4)
-    .setChannels(2)
-    .setAmountIn(0)
-    .setAmountOut(0);
-
-    // client
-    net
-    .setRemoteHostName("192.168.79.101")
-    .setRemotePort(7995)
-    .setOutConnections(1)
-    .initENet();
+    // // // // // // // // // // // // // // // // // // // // //
 
     // Connection each other
     if (isServer)
     {
+        // Server Session
+        std::cout << "Server session started ... " << std::endl;
+        net
+        .setIsServer(true)
+        .setBindHostName("192.168.79.101")
+        .setBindPort(7996)
+        .setMaxClients(4)
+        .setChannels(2)
+        .setAmountIn(0)
+        .setAmountOut(0);
+        net.initENet();
         net.registerClients(1000, 10);
     }
     else
     {
+        // Client Session
+        std::cout << "Client session started ... " << std::endl;
+        net
+        .setIsServer(false)
+        .setRemoteHostName("192.168.79.101")
+        .setRemotePort(7996)
+        .setOutConnections(1);
+        net.initENet();
         net.registerServer(1000, 10);
     }
 
@@ -81,7 +85,7 @@ int main(int argc, char *argv[], char* env[])
     // example of main transfer loop
     //
     //
-    #define DATA_RECEIVED   (int)3
+#define DATA_RECEIVED   (int)3
 
     time_t startTime = time(nullptr);
     while ( (time(nullptr) - startTime < 20 /*main timeout for tests*/) )

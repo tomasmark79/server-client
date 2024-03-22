@@ -80,6 +80,7 @@ class NetworkManager
     ui::LogUserInterface logUser;
     ui::LogDebugInterface logDebug;
 
+    bool        isServer = false;
     ENetHost*   server;
     ENetPeer*   peerServer;
 
@@ -264,7 +265,7 @@ public:
                 return 2;
 
             case ENET_EVENT_TYPE_RECEIVE:
-                logUser << "size: " << event.packet->dataLength << std::endl;
+                // logUser << "size: " << event.packet->dataLength << std::endl;
                 data.insert(data.end(),
                             reinterpret_cast<int*>(event.packet->data),
                             reinterpret_cast<int*>(event.packet->data) + event.packet->dataLength / sizeof(int));
@@ -313,7 +314,7 @@ public:
                 return 2;
 
             case ENET_EVENT_TYPE_RECEIVE:
-                logUser << "size: " << event.packet->dataLength << std::endl;
+                // logUser << "size: " << event.packet->dataLength << std::endl;
                 data.insert(data.end(),
                             reinterpret_cast<int*>(event.packet->data),
                             reinterpret_cast<int*>(event.packet->data) + event.packet->dataLength / sizeof(int));
@@ -362,7 +363,7 @@ public:
             if (this->connectionToTheServer(NetworkManagerTimeoutMilis) == 0)
             {
                 // neccessary - will accept connection request
-                this->clientHostService(eraryVector, 50);
+                this->clientHostService(eraryVector, 500);
                 Beep(1100,20); // connected
                 return 0;
             }
@@ -464,6 +465,16 @@ public:
     int getTotalConnectedClients() const
     {
         return this->totalConnectedClients;
+    }
+    // ---------------------------------------------------
+    int getIsServer() const
+    {
+        return this->isServer;
+    }
+    NetworkManager& setIsServer(bool isServer)
+    {
+        this->isServer = isServer;
+        return *this;
     }
     // ---------------------------------------------------
 };
